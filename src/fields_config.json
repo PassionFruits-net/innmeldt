@@ -1,0 +1,46 @@
+{
+    "fields": [
+      {
+        "name": "id",
+        "type": "String",
+        "key": true,
+        "facetable": true,
+        "filterable": true
+      },
+      {
+        "name": "file_name",
+        "type": "String",
+        "searchable": true,
+        "analyzer": "en.microsoft",
+        "facetable": true,
+        "filterable": true
+      },
+      {
+        "name": "chunk_index",
+        "type": "Int32",
+        "filterable": true,
+        "sortable": true
+      },
+      {
+        "name": "title",
+        "type": "String",
+        "searchable": true,
+        "facetable": true,
+        "filterable": true
+      },
+      {
+        "name": "content",
+        "type": "String",
+        "searchable": true,
+        "analyzer": "en.microsoft"
+      },
+      {
+        "name": "contentVector",
+        "type": "Collection(Single)",
+        "searchable": true,
+        "vector_search_dimensions": 1536,
+        "vector_search_configuration": "default"
+      }
+    ]
+  }
+  
