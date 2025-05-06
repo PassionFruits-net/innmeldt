@@ -1,0 +1,5 @@
+pymupdf4llm
+llama_index
+azure-search-documents
+fastapi
+uvicorn
