@@ -26,13 +26,13 @@ class MarkdownChunker:
             current = {"title": "", "text": "", "level": 0, "start": i, "end": i}
             for part in parts:
                 if part.startswith("#"):
-                    if current["text"]:
+                    if current["text"].strip():
                         chunks.append(current)
                     level = part.count("#")
                     title = part.strip("# ")
                     current = {"title": title, "text": "", "level": level, "start": i, "end": i}
                 else:
                     current["text"] += part
-            if current["text"]:
+            if current["text"].strip():
                 chunks.append(current)
         return chunks
