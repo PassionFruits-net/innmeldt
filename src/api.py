@@ -7,7 +7,7 @@ app = FastAPI()
 
 
 @app.get("/run")
-async def retrieve_model(thread_id: str, content: str):
-    print(content)
-    state = llm_app.invoke({"messages": HumanMessage(content)}, {"configurable": {"thread_id": thread_id}})
+def retrieve_model(thread_id: str, index_name: str, content: str):
+    print(content, index_name)
+    state = llm_app.invoke({"messages": HumanMessage(content), "index_name": index_name}, {"configurable": {"thread_id": thread_id}})
     return state["messages"][-1].content
