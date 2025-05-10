@@ -5,7 +5,8 @@ from parsing import parse_pdf_to_markdown
 from chunker import MarkdownChunker
 from indexer import upload_chunks
 from chat import chat
-    
+
+
 def main():
     pdf_path = sys.argv[1]
     pages = parse_pdf_to_markdown(pdf_path)

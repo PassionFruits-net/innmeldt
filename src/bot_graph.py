@@ -1,44 +1,39 @@
 from langgraph.graph import StateGraph, MessagesState, START, END
-from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langgraph.checkpoint.memory import MemorySaver
-from dotenv import load_dotenv
-import os
-load_dotenv()
-
+from retriever import semantic_search
+from chat import chat
 
 context_template = PromptTemplate.from_template(
     "context:\n{context}\nquestion:\n{content}"
 )
 
-llm = ChatOpenAI(model="gpt-4o-mini")
-
 
 class BotState(MessagesState):
     context: str # RAG context
+    index_name: str # azure search index
 
 
-async def retrieval(state: BotState):
+def retrieval(state: BotState):
     messages = state["messages"]
-    last_message = messages[-1]
+    index_name = state["index_name"]
+    last_message = messages[-1].content
+    retrieved = semantic_search(last_message, index_name)
 
-    # Example retrieval logic
-    retrieved = "Nothing to retrieve"
-    
-    return {"context": retrieved}
+    return {"context": "\n\n".join(retrieved)}
 
 
-async def model(state: BotState):
+def model(state: BotState):
     messages = state["messages"]
     retrieved = state["context"]
 
-    # messages[-1].content = context_template.format(context=retrieved, content=messages[-1].content)
+    messages[-1].content = context_template.format(context=retrieved, content=messages[-1].content)
+    response = chat(messages)
 
-    response = await llm.ainvoke(messages)
-    return {"messages": response.content}
+    return {"messages": response}
 
 
-workflow = StateGraph(MessagesState)
+workflow = StateGraph(BotState)
 workflow.add_node(retrieval)
 workflow.add_node(model)
 
