@@ -1,5 +1,8 @@
 pymupdf4llm
 llama_index
 azure-search-documents
+openai
+langchain
+langgraph
 fastapi
 uvicorn

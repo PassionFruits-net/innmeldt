@@ -2,16 +2,13 @@
 
 from typing import List
 from azure.search.documents.models import VectorizedQuery
-from config import settings, openai_client
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from openai import AzureOpenAI
+from api_client import embedding_client
+from config import settings
 
-embedding_client = AzureOpenAI(
-    api_key=settings.openai_api_key,
-    azure_endpoint=settings.openai_endpoint,
-    api_version=settings.openai_api_version
-)
+
 def semantic_search(query: str, index_name: str, k: int = 3) -> List[str]:
     search_client = SearchClient(
         endpoint=settings.search_endpoint,
@@ -24,9 +21,6 @@ def semantic_search(query: str, index_name: str, k: int = 3) -> List[str]:
         model=settings.embedding_deployment,
         input=[query]
     ).data[0].embedding
-
-
-
 
     # 2. Prepare vectorized query (no need to set kind manually!)
     vector_query = VectorizedQuery(

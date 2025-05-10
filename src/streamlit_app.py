@@ -5,8 +5,9 @@ import streamlit as st
 from config import settings
 from parsing import parse_pdf_to_markdown
 from chunker import MarkdownChunker
-from indexer import upload_chunks
-from indexer import ensure_index, generate_index_name
+from indexer import AzureVectorStore
+# from indexer import upload_chunks
+# from indexer import ensure_index, generate_index_name
 import requests
 
 
@@ -33,14 +34,20 @@ def main():
                 path = tmp.name
 
             pages = parse_pdf_to_markdown(path)
-            docs.extend(MarkdownChunker().chunk(pages, source_file=path))
+            docs.extend(MarkdownChunker().chunk(pages, source_file=f.name))
 
-        print(settings.index_name)
-        index_name = generate_index_name(names)
-        ensure_index(settings, index_name)
-        upload_chunks(settings, docs, index_name)
+        vec = AzureVectorStore(settings, docs)
+        vec.upload()
+
+        index_name = vec.index_name
         settings.index_name = index_name
-        print(settings.index_name)
+
+        # print(settings.index_name)
+        # index_name = generate_index_name(names)
+        # ensure_index(settings, index_name)
+        # upload_chunks(settings, docs, index_name)
+        # settings.index_name = index_name
+        # print(settings.index_name)
 
         st.session_state["index_name"] = index_name
         st.success(f"Indexed into {index_name}")

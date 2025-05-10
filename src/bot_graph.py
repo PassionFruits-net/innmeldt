@@ -4,17 +4,10 @@ from langgraph.checkpoint.memory import MemorySaver
 from retriever import semantic_search
 from chat import chat
 
-
 context_template = PromptTemplate.from_template(
     "context:\n{context}\nquestion:\n{content}"
 )
 
-
-
-openai_client = AzureChatOpenAI(
-    azure_deployment=settings.chat_deployment,
-    api_version=settings.openai_api_version
-)
 
 
 

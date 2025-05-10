@@ -1,34 +1,10 @@
-# # config.py
-# from pydantic_settings import BaseSettings
-# from pydantic import SecretStr
-
-# class Settings(BaseSettings):
-# # Azure Cognitive Search
-# search_endpoint: str
-# search_key: SecretStr
-# index_name: str
-
-# # Azure OpenAI
-# openai_endpoint: str
-# openai_api_key: SecretStr
-# openai_api_version: str
-# embedding_deployment: str
-# chat_deployment: str
-
-# class Config:
-# env_file = ".env"
-# env_file_encoding = "utf-8"
-
-# settings = Settings()
-
-# # src/config.py
+# config.py
 
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 from pydantic import SecretStr
 from langchain_openai import AzureChatOpenAI
-
 
 
 # 1) explicitly point at your .env, one level up from src/
@@ -58,7 +34,3 @@ def _missing(varname: str):
 
 settings = Settings()
 
-openai_client = AzureChatOpenAI(
-    azure_deployment=settings.chat_deployment,
-    api_version=settings.openai_api_version
-)
