@@ -81,7 +81,7 @@ def model(state: BotState):
     """Generate a response based on the context and the question."""
     
     messages = state["messages"]
-    retrieved = "\n".join(state["relevant"])
+    retrieved = "\n".join(state["context"])
      
     messages[-1].content = context_template.format(context=retrieved, content=messages[-1].content)
     
