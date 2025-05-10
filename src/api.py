@@ -5,9 +5,14 @@ import asyncio
 
 app = FastAPI()
 
-
 @app.get("/run")
 def retrieve_model(thread_id: str, index_name: str, content: str):
-    print(content, index_name)
     state = llm_app.invoke({"messages": HumanMessage(content), "index_name": index_name}, {"configurable": {"thread_id": thread_id}})
-    return state["messages"][-1].content
+
+    result_content = state["messages"][-1].content
+    result_context = state["relevant"]
+
+    return {
+        "content": result_content,
+        "context": result_context
+    }

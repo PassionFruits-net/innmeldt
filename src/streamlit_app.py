@@ -6,14 +6,13 @@ from config import settings
 from parsing import parse_pdf_to_markdown
 from chunker import MarkdownChunker
 from indexer import AzureVectorStore
-# from indexer import upload_chunks
-# from indexer import ensure_index, generate_index_name
 import requests
+import json
 
 
 def chat(query):
     response = requests.get("http://localhost:8000/run", {"thread_id": "testing", "content": query, "index_name": settings.index_name})
-    return response.text
+    return json.loads(response.text)
 
 
 def main():
@@ -42,20 +41,13 @@ def main():
         index_name = vec.index_name
         settings.index_name = index_name
 
-        # print(settings.index_name)
-        # index_name = generate_index_name(names)
-        # ensure_index(settings, index_name)
-        # upload_chunks(settings, docs, index_name)
-        # settings.index_name = index_name
-        # print(settings.index_name)
-
         st.session_state["index_name"] = index_name
         st.success(f"Indexed into {index_name}")
 
     query = st.text_input("Ask a question")
-    if query and st.button("Ask"):
+    if st.button("Ask") and query:
         answer = chat(query)
-        st.write(answer)
+        st.write(f"Answer: {answer["content"]}\n\nContext:{"\n\n".join(answer["context"])}")
 
 if __name__ == "__main__":
     main()

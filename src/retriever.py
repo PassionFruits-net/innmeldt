@@ -38,6 +38,7 @@ def semantic_search(query: str, index_name: str, k: int = 3) -> List[str]:
 
 
     return [
-        f"File: {r['file_name']}, Score: {r['@search.score']}, Content: {r["content"]}"
+#         f"File: {r['file_name']}, Score: {r['@search.score']}, Content: {r["content"]}"
+        r["content"]
         for r in results
     ]
