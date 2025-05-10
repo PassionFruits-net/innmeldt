@@ -9,8 +9,6 @@ context_template = PromptTemplate.from_template(
 )
 
 
-
-
 class BotState(MessagesState):
     context: str # RAG context
     index_name: str # azure search index
