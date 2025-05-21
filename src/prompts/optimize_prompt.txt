@@ -1,0 +1,19 @@
+You will now be given a prompt, and your objective is to give me back the same prompt, but rewritten to make all references explicit and unambiguous, meaning make the prompt objective based on the prior chat history. If it's already unambiguous, then do not change the prompt. If a reference isn't in the chat history, then leave it ambiguous. Do not add extra information or any other text, only give back the final prompt.
+Prompt: '{content}'
+
+Examples:
+Chat history: "It's a potato."
+Prompt: "It's pretty good."
+Output: "The potato is pretty good."
+
+Chat history: "We talked about the movie Inception."
+Prompt: "What did it mean?"
+Output: "What did the movie Inception mean?"
+
+Chat history: "She likes apples."
+Prompt: "What does she like?"
+Output: "What does she like?"
+
+Chat history: "I went to Paris last year."
+Prompt: "Describe the city"
+Output: "Describe Paris"

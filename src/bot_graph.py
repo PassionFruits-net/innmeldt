@@ -17,18 +17,18 @@ system_prompt = [SystemMessage("You are a helpful assistant. Answer ONLY based o
 class BotState(MessagesState):
     context: str
     index_name: str
-    relevant: List[str]
+    relevant: List[str] = []
+    optimized: str
 
 
-relevance_prompt = PromptTemplate.from_template(
-    "Given the following context and question, which lines of the context are relevant to answering the question?\n\n"
-    "Context:\n{context}\n\nQuestion:\n{question}\n\n"
-    "You will add DIRECT sentences from the context that is relevant to the question. If there is multiple sentences after each other then that is one line. If the context is not relevant, then don't add anything to the list."
-)
+optimize_prompt = PromptTemplate.from_file("prompts/optimize_prompt.txt")
 
 
-class RelevanceResponse(BaseModel):
-    relevant_lines: List[str]
+def prompt_optimalization(state: BotState):
+    msgs = state["messages"]
+    optimized = openai_llm.invoke(msgs[:-1] + [optimize_prompt.format(content=msgs[-1].content)])
+
+    return {"messages": optimized}
 
 
 def retrieval(state: BotState):
@@ -41,40 +41,6 @@ def retrieval(state: BotState):
     retrieved = semantic_search(last_message, index_name)
     
     return {"context": retrieved}
-
-
-def highlight_relevance(state: BotState):
-    """highlight direct quotes that are relevant."""
-    
-    context = state["context"]
-    last_message = state["messages"][-1].content
-    context_str = "\n".join(context)
-    
-    formatted_prompt = relevance_prompt.format(context=context_str, question=last_message)
-    
-    structured_llm = openai_llm.with_structured_output(RelevanceResponse)
-    response: RelevanceResponse = structured_llm.invoke(formatted_prompt)
-
-    for line in response.relevant_lines:
-        if line not in context_str:
-            print(line)
-        else:
-            print("CORRECT.")
-
-    return {"relevant": response.relevant_lines}
-
-
-def is_question_relevant(state: BotState):
-    """Check if there is relevant context."""
-    
-    if len(state["relevant"]):
-        return "model"
-    
-    return "question_irrelevant"
-
-
-def question_irrelevant(state: BotState):
-    return {"messages": "There is no context to answer that question."}
 
 
 def model(state: BotState):
@@ -91,18 +57,17 @@ def model(state: BotState):
 
 
 workflow = StateGraph(BotState)
+
 workflow.add_node(retrieval)
-workflow.add_node(highlight_relevance)
-workflow.add_node(is_question_relevant)
-workflow.add_node(question_irrelevant)
 workflow.add_node(model)
+workflow.add_node(prompt_optimalization)
 
-
-workflow.add_edge(START, "retrieval")
-workflow.add_edge("retrieval", "highlight_relevance")
-workflow.add_conditional_edges("highlight_relevance", is_question_relevant)
-
-workflow.add_edge("question_irrelevant", END)
-workflow.add_edge("model", END)
+workflow.add_edge(START, "prompt_optimalization")
+workflow.add_edge("prompt_optimalization", "retrieval")
+# workflow.add_edge("retrieval", "highlight_relevance")
+# # workflow.add_conditional_edges("highlight_relevance", is_question_relevant)
+# 
+# workflow.add_edge("question_irrelevant", END)
+# workflow.add_edge("model", END)
 
 llm_app = workflow.compile(checkpointer=MemorySaver())
