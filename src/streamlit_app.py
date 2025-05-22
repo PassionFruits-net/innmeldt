@@ -22,38 +22,47 @@ def main():
     if "index_name" not in st.session_state:
         st.session_state["index_name"] = ""
 
-    uploaded = st.file_uploader("Upload File(s)", type=["pdf", "md"], accept_multiple_files=True)
+    if "show_indexing" not in st.session_state:
+        st.session_state["show_indexing"] = False
 
-    if uploaded and st.button("Index"):
-        names, docs = [], []
 
-        for f in uploaded:
-            suffix = f.name.split(".")[-1].lower()
+    if st.button("Change documents"):
+        st.session_state["show_indexing"] = not st.session_state["show_indexing"]
 
-            with tempfile.NamedTemporaryFile(suffix=f".{suffix}", delete=False) as tmp:
-                tmp.write(f.getbuffer())
-                path = tmp.name
 
-            if suffix == "pdf":
-                pages = parse_pdf_to_markdown(path)
-            elif suffix == "md":
-                # Decode the markdown file content from bytes to string
-                txt = f.getvalue().decode("utf-8")
-                pages = [txt]
-            else:
-                st.warning(f"Unsupported file type: {f.name}")
-                continue
+    if st.session_state["show_indexing"]:
+        uploaded = st.file_uploader("Upload File(s)", type=["pdf", "md"], accept_multiple_files=True)
 
-            docs.extend(MarkdownChunker().chunk(pages, source_file=f.name))
+        if uploaded and st.button("Index"):
+            names, docs = [], []
 
-        vec = AzureVectorStore(settings, docs, st.session_state["index_name"])
-        vec.upload()
+            for f in uploaded:
+                suffix = f.name.split(".")[-1].lower()
 
-        index_name = vec.index_name
-        settings.index_name = index_name
+                with tempfile.NamedTemporaryFile(suffix=f".{suffix}", delete=False) as tmp:
+                    tmp.write(f.getbuffer())
+                    path = tmp.name
 
-        st.session_state["index_name"] = index_name
-        st.success(f"Indexed into {index_name}")
+                if suffix == "pdf":
+                    pages = parse_pdf_to_markdown(path)
+                elif suffix == "md":
+                    # Decode the markdown file content from bytes to string
+                    txt = f.getvalue().decode("utf-8")
+                    pages = [txt]
+                else:
+                    st.warning(f"Unsupported file type: {f.name}")
+                    continue
+
+                docs.extend(MarkdownChunker().chunk(pages, source_file=f.name))
+
+            vec = AzureVectorStore(settings, docs, st.session_state["index_name"])
+            vec.upload()
+
+            index_name = vec.index_name
+            settings.index_name = index_name
+
+            st.session_state["index_name"] = index_name
+            st.success(f"Indexed into {index_name}")
 
     query = st.text_input("Ask a question")
     if st.button("Ask") and query:

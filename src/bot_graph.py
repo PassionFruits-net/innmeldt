@@ -1,73 +1,106 @@
 from langgraph.graph import StateGraph, MessagesState, START, END
-from langchain_core.messages import SystemMessage
 from langchain.prompts import PromptTemplate
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.runnables import RunnableConfig
+from typing import List, TypedDict
+from pydantic import BaseModel
 from retriever import semantic_search
 from api_client import openai_llm
-from pydantic import BaseModel
-from typing import List
-
-context_template = PromptTemplate.from_template(
-    "context:\n{context}\nquestion:\n{content}"
-)
-
-system_prompt = [SystemMessage("You are a helpful assistant. Answer ONLY based on the provided context.")]
 
 
-class BotState(MessagesState):
-    context: str
-    index_name: str
-    relevant: List[str] = []
-    optimized: str
-
-
+answer_template = PromptTemplate.from_file("prompts/rag_answer_prompt.txt")
 optimize_prompt = PromptTemplate.from_file("prompts/optimize_prompt.txt")
 
 
-def prompt_optimalization(state: BotState):
-    msgs = state["messages"]
-    optimized = openai_llm.invoke(msgs[:-1] + [optimize_prompt.format(content=msgs[-1].content)])
+class BotState(MessagesState):
+    optimized: str
+    context: List[str]
+    reranked: List[str]
 
-    return {"messages": optimized}
+
+class ConfigScema(TypedDict):
+    index_name: str
+    retrieval_n: int
+    rerank_n: int
 
 
-def retrieval(state: BotState):
-    """Retrieve context based on the last message's content."""
-    
+def check_if_retrieval_needed(state: BotState) -> str:
+    """Determine whether retrieval is necessary based on the input state."""
+    # TODO: analyze if retrieval needed with structured output
+    if True:
+        return "optimize_prompt"
+    else:
+        return "generate_directly"
+
+
+def generate_directly_node(state: BotState):
+    """Generate a direct response using the LLM without retrieval."""
     messages = state["messages"]
-    index_name = state["index_name"]
-    last_message = messages[-1].content
-    
-    retrieved = semantic_search(last_message, index_name)
-    
-    return {"context": retrieved}
-
-
-def model(state: BotState):
-    """Generate a response based on the context and the question."""
-    
-    messages = state["messages"]
-    retrieved = "\n".join(state["context"])
-     
-    messages[-1].content = context_template.format(context=retrieved, content=messages[-1].content)
-    
-    response = openai_llm.invoke(system_prompt + messages)
-    
+    response = openai_llm.invoke(messages)
     return {"messages": response}
 
 
-workflow = StateGraph(BotState)
+def optimize_prompt_node(state: BotState):
+    """Refine or optimize the user prompt before retrieval."""
+    messages = state["messages"]
+    optimized = openai_llm.invoke(messages[:-1] + [optimize_prompt.format(content=messages[-1].content)])
+    return {"optimized": optimized}
 
-workflow.add_node(retrieval)
-workflow.add_node(model)
-workflow.add_node(prompt_optimalization)
 
-workflow.add_edge(START, "prompt_optimalization")
-workflow.add_edge("prompt_optimalization", "retrieval")
-# workflow.add_edge("retrieval", "highlight_relevance")
-# # workflow.add_conditional_edges("highlight_relevance", is_question_relevant)
-# 
-# workflow.add_edge("question_irrelevant", END)
-# workflow.add_edge("model", END)
+def retrieval_node(state: BotState, config: RunnableConfig):
+    """Perform semantic retrieval based on the optimized prompt."""
+    # TODO: implement hybrid search
+    retrieval_n = config["configurable"].get("retrieval_n", 150)
+    index_name = config["configurable"]["index_name"]
 
-llm_app = workflow.compile(checkpointer=MemorySaver())
+    last_message = state["optimized"].content
+    retrieved = semantic_search(last_message, index_name, k=retrieval_n)
+
+    return {"context": retrieved}
+
+
+def rerank_node(state: BotState, config: RunnableConfig):
+    """Rerank the retrieved documents to select the most relevant ones."""
+    # TODO: implement reranking
+    rerank_n = config["configurable"].get("rerank_n", 20)
+    top_chunks = (state["context"])[:rerank_n]
+
+    return {"reranked": top_chunks}
+
+
+def generate_with_rag_node(state: BotState):
+    """Generate a response using retrieved and reranked context (RAG)."""
+    messages = state["messages"]
+    combined_context = "\n".join(state["reranked"])
+
+    last_message = [answer_template.format(context=combined_context, content=messages[-1].content)]
+    response = openai_llm.invoke(messages[:-1] + last_message)
+
+    return {"messages": response}
+
+
+graph_builder = StateGraph(BotState, ConfigScema)
+
+graph_builder.add_node("check_retrieval", check_if_retrieval_needed)
+graph_builder.add_node("generate_directly", generate_directly_node)
+graph_builder.add_node("optimize_prompt", optimize_prompt_node)
+graph_builder.add_node("retrieval", retrieval_node)
+graph_builder.add_node("reranking", rerank_node)
+graph_builder.add_node("generate_with_rag", generate_with_rag_node)
+
+graph_builder.set_entry_point("check_retrieval")
+
+graph_builder.add_conditional_edges(
+    "check_retrieval",
+    check_if_retrieval_needed,
+    ["generate_directly", "optimize_prompt"]
+)
+
+graph_builder.add_edge("generate_directly", END)
+
+graph_builder.add_edge("optimize_prompt", "retrieval")
+graph_builder.add_edge("retrieval", "reranking")
+graph_builder.add_edge("reranking", "generate_with_rag")
+graph_builder.add_edge("generate_with_rag", END)
+
+graph = graph_builder.compile(checkpointer=MemorySaver())
