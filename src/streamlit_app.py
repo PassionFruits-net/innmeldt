@@ -1,11 +1,11 @@
 import tempfile
 import streamlit as st
 from config import settings
-from parsing import parse_pdf_to_markdown
-from chunker import MarkdownChunker
+from chunker import Chunker
 from indexer import AzureVectorStore
 import requests
 import json
+import os
 
 
 def chat(query):
@@ -14,6 +14,25 @@ def chat(query):
         params={"thread_id": "testing", "content": query, "index_name": st.session_state["index_name"]}
     )
     return json.loads(response.text)
+
+
+def save_uploads_to_temp_paths(uploaded_files):
+    """
+    Save uploaded Streamlit files to temp files and return list of file paths.
+    The caller must handle the lifecycle of the temp files.
+    """
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_paths = []
+
+    for uploaded_file in uploaded_files:
+        temp_path = os.path.join(temp_dir.name, uploaded_file.name)
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        temp_paths.append(temp_path)
+
+    # Return both the temp dir object and paths, so temp_dir isn't deleted immediately
+    return temp_dir, temp_paths
+
 
 
 def main():
@@ -36,33 +55,19 @@ def main():
         if uploaded and st.button("Index"):
             names, docs = [], []
 
-            for f in uploaded:
-                suffix = f.name.split(".")[-1].lower()
+            temp_dir, temp_paths = save_uploads_to_temp_paths(uploaded)
+            docs = Chunker(temp_paths).chunk_data()
 
-                with tempfile.NamedTemporaryFile(suffix=f".{suffix}", delete=False) as tmp:
-                    tmp.write(f.getbuffer())
-                    path = tmp.name
+            print(docs)
 
-                if suffix == "pdf":
-                    pages = parse_pdf_to_markdown(path)
-                elif suffix == "md":
-                    # Decode the markdown file content from bytes to string
-                    txt = f.getvalue().decode("utf-8")
-                    pages = [txt]
-                else:
-                    st.warning(f"Unsupported file type: {f.name}")
-                    continue
+            # vec = AzureVectorStore(settings, docs, st.session_state["index_name"])
+            # vec.upload()
 
-                docs.extend(MarkdownChunker().chunk(pages, source_file=f.name))
+            # index_name = vec.index_name
+            # settings.index_name = index_name
 
-            vec = AzureVectorStore(settings, docs, st.session_state["index_name"])
-            vec.upload()
-
-            index_name = vec.index_name
-            settings.index_name = index_name
-
-            st.session_state["index_name"] = index_name
-            st.success(f"Indexed into {index_name}")
+            # st.session_state["index_name"] = index_name
+            # st.success(f"Indexed into {index_name}")
 
     query = st.text_input("Ask a question")
     if st.button("Ask") and query:
