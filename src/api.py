@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from langchain_core.messages import HumanMessage
-from bot_graph import graph
+from RAG.bot_graph import graph
 import asyncio
 
 app = FastAPI()

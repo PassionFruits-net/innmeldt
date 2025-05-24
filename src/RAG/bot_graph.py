@@ -4,8 +4,8 @@ from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
 from typing import List, TypedDict
 from pydantic import BaseModel
-from retriever import semantic_search
-from api_client import openai_llm
+from .retriever import semantic_search
+from .api_client import openai_llm
 
 
 answer_template = PromptTemplate.from_file("prompts/rag_answer_prompt.txt")
@@ -81,21 +81,18 @@ def generate_with_rag_node(state: BotState):
 
 graph_builder = StateGraph(BotState, ConfigScema)
 
-graph_builder.add_node("check_retrieval", check_if_retrieval_needed)
+# graph_builder.add_node("check_retrieval", check_if_retrieval_needed)
 graph_builder.add_node("generate_directly", generate_directly_node)
 graph_builder.add_node("optimize_prompt", optimize_prompt_node)
 graph_builder.add_node("retrieval", retrieval_node)
 graph_builder.add_node("reranking", rerank_node)
 graph_builder.add_node("generate_with_rag", generate_with_rag_node)
 
-graph_builder.set_entry_point("check_retrieval")
+# graph_builder.set_entry_point("check_retrieval")
+graph_builder.set_entry_point("optimize_prompt")
+# graph_builder.add_edge("check_retrieval","optimize_prompt")
 
-graph_builder.add_conditional_edges(
-    "check_retrieval",
-    check_if_retrieval_needed,
-    ["generate_directly", "optimize_prompt"]
-)
-
+# graph_builder.add_conditional_edges("check_retrieval",check_if_retrieval_needed)
 graph_builder.add_edge("generate_directly", END)
 
 graph_builder.add_edge("optimize_prompt", "retrieval")

@@ -1,8 +1,8 @@
 import tempfile
 import streamlit as st
 from config import settings
-from chunker import Chunker
-from indexer import AzureVectorStore
+from data_ingestion.chunker import Chunker
+from data_ingestion.indexer import AzureIndexer
 import requests
 import json
 import os
@@ -48,7 +48,6 @@ def main():
     if st.button("Change documents"):
         st.session_state["show_indexing"] = not st.session_state["show_indexing"]
 
-
     if st.session_state["show_indexing"]:
         uploaded = st.file_uploader("Upload File(s)", type=["pdf", "md"], accept_multiple_files=True)
 
@@ -56,18 +55,15 @@ def main():
             names, docs = [], []
 
             temp_dir, temp_paths = save_uploads_to_temp_paths(uploaded)
-            docs = Chunker(temp_paths).chunk_data()
 
-            print(docs)
+            indexer = AzureIndexer(settings, temp_paths, chunker=Chunker)
+            indexer.upload()
 
-            # vec = AzureVectorStore(settings, docs, st.session_state["index_name"])
-            # vec.upload()
+            index_name = indexer.index_name
+            settings.index_name = index_name
 
-            # index_name = vec.index_name
-            # settings.index_name = index_name
-
-            # st.session_state["index_name"] = index_name
-            # st.success(f"Indexed into {index_name}")
+            st.session_state["index_name"] = index_name
+            st.success(f"Indexed into {index_name}")
 
     query = st.text_input("Ask a question")
     if st.button("Ask") and query:

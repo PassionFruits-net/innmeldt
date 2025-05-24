@@ -4,12 +4,14 @@ from typing import List
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from llama_index.core import Document as LlamaDocument
-from parsing import LOADERS
+from .parsing import LOADERS
+import hashlib
 
 
 class Chunker:
     def __init__(self, paths: List[str]):
         self.paths = paths
+        self.files = None
 
     def chunk_data(self):
         raw_docs = self.__load_files()
@@ -23,7 +25,18 @@ class Chunker:
         llama_docs = [LlamaDocument(text=self.__make_text(doc), metadata=doc.metadata) for doc in chunked_docs]
         return llama_docs
 
+
+    def get_index_name(self):
+        files = self.__load_files()
+        sorted_chunks = sorted([f.page_content for f in files])
+        combined_text = "CHUNK".join(sorted_chunks)
+
+        hash_object = hashlib.sha256(combined_text.encode('utf-8'))
+        return hash_object.hexdigest()
+
     def __load_files(self) -> List[Document]:
+        if self.files:
+            return self.files
         docs = []
 
         for path in self.paths:
@@ -36,6 +49,7 @@ class Chunker:
             loaded_docs = loader(path)
             docs.extend(loaded_docs)
 
+        self.files = docs
         return docs
 
     def __make_text(self, doc: Document) -> str:

@@ -20,19 +20,27 @@ import json
 import time
 import re
 from datetime import datetime
+from .chunker import Chunker
 
 
-class AzureVectorStore:
+class AzureIndexer:
     """Handles embedding, indexing, and uploading documents to Azure Cognitive Search."""
 
-    def __init__(self, settings, documents: List[Document], index_name: str = None):
+    def __init__(self, settings, paths: List[str], chunker=Chunker, index_name: str = None):
         """Initialize the vector store with settings, documents, and optional index name."""
         self.settings = settings
-        self.documents = documents
-        self.index_name = index_name or self._generate_index_name()
-        self._ensure_index()
+        self.paths = paths
+        self.chunker = chunker(self.paths)
+        self.documents = self.chunker.chunk_data()
+        self.index_name = index_name or self.chunker.get_index_name()
 
     def upload(self):
+        if self._index_exists():
+            print("Index exists")
+            return
+
+        self._initialize_index()
+
         """Uploads embedded document chunks to the Azure Search index."""
         print(f"[Upload] Starting upload to index: {self.index_name}")
         embedding_client = AzureOpenAI(
@@ -81,7 +89,7 @@ class AzureVectorStore:
         return [{
             "id": doc.metadata["id"],
             "file_name": doc.metadata["source"],
-            "chunk_index": doc.metadata["chunk_index"],
+            "chunk_index": doc.metadata.get("chunk_index", 0),
             "title": doc.metadata.get("title", ""),
             "content": doc.text,
             "contentVector": doc.metadata["vector"]
@@ -98,7 +106,7 @@ class AzureVectorStore:
         for i in range(0, len(documents), batch_size):
             batch = documents[i:i + batch_size]
             result = search_client.upload_documents(documents=batch)
-            succeeded = sum(1 for r in result if r.succeeded)
+            succeeded = sum(r.succeeded for r in result)
             print(f"[Upload] Batch {i // batch_size + 1}: {succeeded} succeeded")
 
     def _document_exists(self, search_client, document_id: str) -> bool:
@@ -108,13 +116,6 @@ class AzureVectorStore:
             return True
         except Exception:
             return False
-
-    def _generate_index_name(self) -> str:
-        """Generate a sanitized and timestamped index name from document sources."""
-        base_names = [doc.metadata.get("source", "") for doc in self.documents]
-        print(base_names)
-        base = "_".join(re.sub(r'[^a-zA-Z0-9]', '_', n.lower()) for n in base_names)
-        return base[:128]  # Azure Search index name limit
 
     def _index_exists(self) -> bool:
         """Check if the Azure Search index already exists."""
@@ -128,18 +129,13 @@ class AzureVectorStore:
         except:
             return False
 
-    def _ensure_index(self):
-        """Ensure the Azure Search index exists or create it."""
-        if not self._index_exists():
-            self._initialize_index()
-
     def _initialize_index(self):
         """Create a new Azure Search index using field configuration."""
         client = SearchIndexClient(
             endpoint=self.settings.search_endpoint,
             credential=AzureKeyCredential(self.settings.search_key),
         )
-        fields = self._load_fields_config("fields_config.json")
+        fields = self._load_fields_config("data_ingestion/fields_config.json")
         vector_search = VectorSearch(
             profiles=[
                 VectorSearchProfile(

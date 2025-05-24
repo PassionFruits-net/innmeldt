@@ -5,7 +5,7 @@ from azure.search.documents.models import VectorizedQuery
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from openai import AzureOpenAI
-from api_client import embedding_client
+from .api_client import embedding_client
 from config import settings
 
 
