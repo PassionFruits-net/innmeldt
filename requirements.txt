@@ -3,6 +3,7 @@ llama_index
 azure-search-documents
 openai
 langchain
+langchain-openai
 langgraph
 fastapi
 uvicorn
