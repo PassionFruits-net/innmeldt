@@ -1,0 +1,88 @@
+cookie:
+  expiry_days: 30
+  key: some_signature_key
+  name: some_cookie_name
+credentials:
+  usernames:
+    egil:
+      email: egil@passionfruits.net
+      failed_login_attempts: 0
+      first_name: Egil
+      last_name: Moller
+      logged_in: false
+      password: $2b$12$utGIWMfikGBDUe3P.qe5wezpkG0VlzqZ.HXsmCxrgf1dHqqscYelW
+      roles:
+      - admin
+      - editor
+      - viewer
+    espen:
+      email: espen@passionfruits.net
+      failed_login_attempts: 0
+      first_name: Espen
+      last_name: null
+      logged_in: false
+      password: $2b$12$t/r8u3h0N42yemzeez5oE.MK8P8Q0yMk9bYTvf1.vHz.hBMAQr6RK
+      roles:
+      - admin
+      - editor
+      - viewer
+    geir:
+      email: geir@passionfruits.net
+      failed_login_attempts: 0
+      first_name: Geir
+      last_name: Isene
+      logged_in: false
+      password: $2b$12$UzwX.CLXB6n40Xc4/.6jFu3jQGEV4OIFEdKR1jMc2lz.zK1n0ag.S
+      roles:
+      - admin
+      - editor
+      - viewer
+    niklas:
+      email: niklas@passionfruits.net
+      failed_login_attempts: 0
+      first_name: Niklas
+      last_name: Isene
+      logged_in: false
+      password: $2b$12$gRG5l5jXf/L7Xlg9VJRQauc3nx012h7IZ899fgmj1MXWf5SczTB5e
+      roles:
+      - admin
+      - editor
+      - viewer
+    saghar:
+      email: saghar@passionfruits.net
+      failed_login_attempts: 0
+      first_name: Saghar
+      last_name: Asadi
+      logged_in: true
+      password: $2b$12$LeHT2tPm2A1D16nQbyiGceIrykz4u3taJzRmRJChaiwnbfTammHtG
+      roles:
+      - admin
+      - editor
+      - viewer
+    siv:
+      email: siv@passionfruits.net
+      failed_login_attempts: 0
+      first_name: Siv
+      last_name: Bayegan
+      logged_in: false
+      password: $2b$12$aQisqCbi1MYup/.EuHUqjeaXQPqJmDGmdGJm5jxQizK8CcMhmNMK.
+      roles:
+      - admin
+      - editor
+      - viewer
+    viktor:
+      email: viktor@passionfruits.net
+      failed_login_attempts: 0
+      first_name: Viktor
+      last_name: null
+      logged_in: false
+      password: $2b$12$bFRe5xWIbcerihkVUz4QOuQUL8kYw6GJ0Nsn/nWrodxmPMUNFDpme
+      roles:
+      - admin
+      - editor
+      - viewer
+pre-authorized:
+  emails:
+  - saghar@passionfruits.net
+persistence:
+  base: az://stories

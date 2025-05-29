@@ -5,7 +5,23 @@ from data_ingestion.chunker import Chunker
 from data_ingestion.indexer import AzureIndexer
 import requests
 import json
+from auth import handle_authentication
 import os
+from langchain_core.messages import HumanMessage
+from RAG.bot_graph import graph
+
+
+def retrieve_model(thread_id: str, index_name: str, content: str):
+    state = graph.invoke({"messages": HumanMessage(content)}, {"configurable": {"thread_id": thread_id, "index_name": index_name}})
+
+    result_content = state["messages"][-1].content
+    result_context = state["reranked"]
+
+    return {
+        "content": result_content,
+        "context": result_context
+    }
+
 
 
 def chat(query):
@@ -39,7 +55,7 @@ def main():
     st.title("Chat me up!")
 
     if "index_name" not in st.session_state:
-        st.session_state["index_name"] = ""
+        st.session_state["index_name"] = os.getenv("INDEX_NAME")
 
     if "show_indexing" not in st.session_state:
         st.session_state["show_indexing"] = False
@@ -67,7 +83,7 @@ def main():
 
     query = st.text_input("Ask a question")
     if st.button("Ask") and query:
-        answer = chat(query)
+        answer = retrieve_model("thread", st.session_state["index_name"], query)
         st.markdown(f"## Answer:\n{answer['content']}")
         
         context_formatted = [f"{i}. {line}" for i, line in enumerate(answer["context"], 1)]
@@ -75,4 +91,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if handle_authentication():
+        main()
