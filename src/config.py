@@ -9,9 +9,9 @@ from langchain_openai import AzureChatOpenAI
 
 # 1) explicitly point at your .env, one level up from src/
 env_path = Path(__file__).parent.parent / ".env"
-if not env_path.exists():
- raise RuntimeError(f".env file not found at {env_path}")
-load_dotenv(dotenv_path=env_path)
+if env_path.exists():
+ load_dotenv(dotenv_path=env_path)
+ # raise RuntimeError(f".env file not found at {env_path}")
 
 def _missing(varname: str):
  raise RuntimeError(f"Required env var {varname} is not set or is empty")
