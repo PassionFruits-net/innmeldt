@@ -8,8 +8,8 @@ from .retriever import semantic_search
 from .api_client import openai_llm
 
 
-answer_template = PromptTemplate.from_file("prompts/rag_answer_prompt.txt")
-optimize_prompt = PromptTemplate.from_file("prompts/optimize_prompt.txt")
+answer_template = PromptTemplate.from_file("src/prompts/rag_answer_prompt.txt")
+optimize_prompt = PromptTemplate.from_file("src/prompts/optimize_prompt.txt")
 
 
 class BotState(MessagesState):
