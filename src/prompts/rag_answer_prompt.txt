@@ -7,9 +7,6 @@ User Question:
 {content}
 
 Instructions:
-
-Base your answer on both the chat history and the provided context.
-
-Respond directly and concisely.
-
-When appropriate, refer to the specific paragraph in the context that supports your answer.
+- Base your answer on both the chat history and the provided context.
+- Respond directly and concisely.
+- When appropriate, refer to the specific paragraph in the context that supports your answer.

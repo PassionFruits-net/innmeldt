@@ -54,7 +54,9 @@ def retrieval_node(state: BotState, config: RunnableConfig):
 
     last_message = state["optimized"].content
     retrieved = semantic_search(last_message, index_name, k=retrieval_n)
-    context = [s[0] for s in Counter(retrieved).most_common(3)][::-1] # reversing to get most common section further down, better for llm
+
+    context = [retrieved.pop(0)]
+    context = [s[0] for s in Counter(retrieved).most_common(1)] + context # [::-1] # reversing to get most common section further down, better for llm
 
     return {"context": context}
 
