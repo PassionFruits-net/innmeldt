@@ -19,8 +19,6 @@ from pymupdf4llm import to_markdown
 
 #     return add
 
-import PyPDF2
-# or
 from pypdf import PdfReader
 
 def load_pdf(path: str) -> list[Document]:

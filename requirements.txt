@@ -8,3 +8,4 @@ langgraph
 fastapi
 uvicorn
 streamlit-authenticator
+pypdf
