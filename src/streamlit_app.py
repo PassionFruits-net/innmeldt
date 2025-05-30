@@ -84,10 +84,12 @@ def main():
     query = st.text_input("Ask a question")
     if st.button("Ask") and query:
         answer = retrieve_model("thread", st.session_state["index_name"], query)
+
         st.markdown(f"## Answer:\n{answer['content']}")
-        
-        context_formatted = [f"{i}. {line}" for i, line in enumerate(answer["context"], 1)]
-        st.markdown("## Context:\n" + "\n".join(context_formatted))
+            
+        if os.getenv("DEBUGGING"):
+            context_formatted = [f"{i}. {line}" for i, line in enumerate(answer["context"], 1)]
+            st.markdown("## Context:\n" + "\n".join(context_formatted))
 
 
 if __name__ == "__main__":
