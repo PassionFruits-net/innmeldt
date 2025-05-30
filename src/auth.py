@@ -7,6 +7,9 @@ import streamlit_authenticator as stauth
 from datetime import datetime
 
 def handle_authentication():
+    load_dotenv()
+    if os.getenv("DEBUGGING"):
+        return True
     with open('config.yaml', 'r', encoding='utf-8') as file:
         config = yaml.load(file, Loader=SafeLoader)
 

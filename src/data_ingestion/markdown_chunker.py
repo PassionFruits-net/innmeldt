@@ -80,8 +80,6 @@ class MarkdownChunker:
 
         for idx, chunk in enumerate(structured_chunks):
             text = "\n".join(chunk["text_lines"]).strip()
-            if not text:
-                continue
 
             doc = Document(
                 text=text,

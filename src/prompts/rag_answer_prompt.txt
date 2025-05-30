@@ -1,4 +1,15 @@
-context:
+Use the chat history and the retrieved context below to answer the user’s question. Reference the most relevant paragraph from the context when applicable.
+
+Context:
 {context}
-user:
+
+User Question:
 {content}
+
+Instructions:
+
+Base your answer on both the chat history and the provided context.
+
+Respond directly and concisely.
+
+When appropriate, refer to the specific paragraph in the context that supports your answer.

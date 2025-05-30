@@ -19,8 +19,33 @@ from pymupdf4llm import to_markdown
 
 #     return add
 
+import PyPDF2
+# or
+from pypdf import PdfReader
 
-def load_pdf(path: str) -> list[str]:
+def load_pdf(path: str) -> list[Document]:
+    documents = []
+    
+    with open(path, 'rb') as file:
+        pdf_reader = PdfReader(file)
+        
+        for page_num, page in enumerate(pdf_reader.pages):
+            text = page.extract_text()
+            if text.strip() and len(text.strip()) > 50:  # Filter meaningful content
+                documents.append(Document(
+                    page_content=text,
+                    metadata={
+                        "source": path,
+                        "start_page": page_num + 1,
+                        "end_page": page_num + 1,
+                        "chunk_index": page_num
+                    }
+                ))
+    
+    return documents
+
+
+def _load_pdf(path: str) -> list[Document]:
     pages = to_markdown(path, page_chunks=True)
 
     return [Document(page_content=p["text"], metadata={
