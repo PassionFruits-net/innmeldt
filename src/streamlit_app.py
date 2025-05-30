@@ -61,7 +61,7 @@ def main():
         st.session_state["show_indexing"] = False
 
 
-    if st.button("Change documents"):
+    if False: # st.button("Change documents"):
         st.session_state["show_indexing"] = not st.session_state["show_indexing"]
 
     if st.session_state["show_indexing"]:
