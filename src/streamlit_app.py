@@ -9,6 +9,10 @@ from auth import handle_authentication
 import os
 from langchain_core.messages import HumanMessage
 from RAG.bot_graph import graph
+from pdf_viewer import render_pdf_viewer
+import time
+
+st.set_page_config(page_title="Chatbot", layout="wide")
 
 
 def retrieve_model(thread_id: str, index_name: str, content: str):
@@ -50,46 +54,74 @@ def save_uploads_to_temp_paths(uploaded_files):
     return temp_dir, temp_paths
 
 
-
 def main():
-    st.title("Chat me up!")
-
     if "index_name" not in st.session_state:
         st.session_state["index_name"] = os.getenv("INDEX_NAME")
 
-    if "show_indexing" not in st.session_state:
-        st.session_state["show_indexing"] = False
+    # Initialize context if not exists
+    if "context" not in st.session_state:
+        st.session_state["context"] = []
 
+    # Add custom CSS to maximize screen usage
+    st.markdown("""
+    <style>
+    .main .block-container {
+        max-width: 95%;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-    if False: # st.button("Change documents"):
-        st.session_state["show_indexing"] = not st.session_state["show_indexing"]
+    # Create two columns - left for chat (smaller), right for PDF viewer (larger)
+    # Using a 3:5 ratio and adding gap between columns
+    col1, spacer, col2 = st.columns([3, 0.5, 5])
 
-    if st.session_state["show_indexing"]:
-        uploaded = st.file_uploader("Upload File(s)", type=["pdf", "md"], accept_multiple_files=True)
-
-        if uploaded and st.button("Index"):
-            names, docs = [], []
-
-            temp_dir, temp_paths = save_uploads_to_temp_paths(uploaded)
-
-            indexer = AzureIndexer(settings, temp_paths, chunker=Chunker)
-            indexer.upload()
-
-            index_name = indexer.index_name
-            settings.index_name = index_name
-
-            st.session_state["index_name"] = index_name
-            st.success(f"Indexed into {index_name}")
-
-    query = st.text_input("Ask a question")
-    if st.button("Ask") and query:
-        answer = retrieve_model("thread", st.session_state["index_name"], query)
-
-        st.markdown(f"## Answer:\n{answer['content']}")
+    # LEFT COLUMN - Chat Interface
+    with col1:
+        st.header("Chatbot")
+        
+        # Add some padding/styling to the chat interface
+        with st.container():
+            st.markdown("""
+            <style>
+            .chat-container {
+                padding-right: 20px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
             
-        if os.getenv("DEBUGGING") == "True":
-            context_formatted = [f"{i}. {line}" for i, line in enumerate(answer["context"], 1)]
-            st.markdown("## Context:\n" + "\n".join(context_formatted))
+            query = st.text_input("Ask a question")
+            if st.button("Ask") and query:
+                start = time.time()
+                answer = retrieve_model("thread", st.session_state["index_name"], query)
+                elapsed = time.time() - start
+
+                st.markdown(f"## Answer:\n{answer['content']}")
+                st.markdown(f"Response time: {elapsed: .2f}s")
+
+                # Update context for PDF viewer
+                st.session_state["context"] = answer["context"]
+
+                if os.getenv("DEBUGGING") == "True":
+                    context_formatted = [f"{i}. {line}" for i, line in enumerate(answer["context"], 1)]
+                    st.markdown("## Context:\n" + "\n".join(context_formatted))
+
+    # SPACER COLUMN - Creates visual separation
+    with spacer:
+        st.markdown("")  # Empty spacer
+
+    # RIGHT COLUMN - PDF Viewer (Larger)
+    with col2:
+        st.header("Relevant paragraphs")
+        
+        # Only show PDF viewer if we have context
+        if st.session_state["context"]:
+            pdf_path = "tjenesteloven.pdf"
+            pdf_data = [("Kort om loven\nTjenestepensjonsloven"), ("§ 1-2. Definisjoner\nI loven betyr:")]
+            render_pdf_viewer(pdf_path, st.session_state["context"])
+        else:
+            st.info("Ask a question to see relevant document sections with highlights.")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ Assess the following chunk:
 # {title}
 "{chunk}"
 
-Reflect briefly (around 50 tokens) on whether the chunk helps answer the query. Then, assign a relevance score from 0 to 1.
+Assign a relevance score from 0 to 1.
 
 ##  Scores:
 0: No relevance at all

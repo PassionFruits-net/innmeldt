@@ -8,7 +8,7 @@ from datetime import datetime
 
 def handle_authentication():
     load_dotenv()
-    if os.getenv("DEBUGGING"):
+    if os.getenv("DEBUGGING") == "True":
         return True
     with open('config.yaml', 'r', encoding='utf-8') as file:
         config = yaml.load(file, Loader=SafeLoader)
@@ -30,8 +30,6 @@ def handle_authentication():
         session_id = f'{st.session_state["username"]}/{datetime.now().strftime("%Y%m%d%H")}'
         st.session_state["user_sessionid"] = session_id
         authenticator.logout(location="sidebar")
-
-        st.markdown(f"<h4>Welcome {st.session_state['name'].split(' ')[0]}!</h4>", unsafe_allow_html=True)
 
         load_dotenv()
         st.session_state["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")

@@ -27,7 +27,6 @@ class ConfigScema(TypedDict):
 
 
 class RankChunk(BaseModel):
-    reflection: str   = Field(..., description="Reflect using around 50 tokens whether the chunk helps answer the user query or not.")
     score:      float = Field(..., description="Give a final score from 0-1 describing how relevant the chunk is to the user query.")
 
 
@@ -38,18 +37,20 @@ def optimize_prompt_node(state: BotState):
     """Refine or optimize the user prompt before retrieval."""
     messages = state["messages"]
     optimized = openai_llm.invoke(messages[:-1] + [optimize_prompt.format(content=messages[-1].content)])
+    print("Prompt optimalization complete")
     return {"optimized": optimized}
 
 
 def retrieval_node(state: BotState, config: RunnableConfig):
     """Perform semantic retrieval based on the optimized prompt."""
     # TODO: implement hybrid search
-    retrieval_n = config["configurable"].get("retrieval_n", 20)
+    retrieval_n = config["configurable"].get("retrieval_n", 15)
     index_name = config["configurable"]["index_name"]
 
     last_message = state["optimized"].content
     retrieved = semantic_search(last_message, index_name, k=retrieval_n)
 
+    print("Retrieval complete")
     return {"retrieved": retrieved}
 
 
@@ -57,20 +58,24 @@ def reranking_node(state: BotState, config: RunnableConfig):
     rerank_n = config["configurable"].get("rerank_n", 5)
     query = state["optimized"]
     context_chunks = state["retrieved"]
+    return {"context": [c["content"] for c in context_chunks[:5]]}
 
     async def score_all_chunks():
-        async def score_chunk(chunk, title):
+        async def score_chunk(chunk, title, i):
             prompt = rerank_prompt.format(title=title, chunk=chunk, query=query)
+            print("Running: %d" % i)
             result = await rerank_llm.ainvoke(prompt)
+            print("Complete: %d" % i)
             return {"chunk": chunk, "score": result.score}
 
-        tasks = [score_chunk(chunk["content"], chunk["title"]) for chunk in context_chunks]
+        tasks = [score_chunk(chunk["content"], chunk["title"], i) for i, chunk in enumerate(context_chunks)]
         return await asyncio.gather(*tasks)
 
     scored_chunks = asyncio.run(score_all_chunks())
 
     top_chunks = sorted(scored_chunks, key=lambda x: x["score"], reverse=True)[:rerank_n]
 
+    print("Rerank complete")
     return {"context": [item["chunk"] for item in top_chunks]}
 
 
