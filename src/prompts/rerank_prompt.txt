@@ -1,0 +1,15 @@
+Given the user query: "{query}"
+Assess the following chunk:
+# {title}
+"{chunk}"
+
+Reflect briefly (around 50 tokens) on whether the chunk helps answer the query. Then, assign a relevance score from 0 to 1.
+
+##  Scores:
+0: No relevance at all
+0 - 0.2: Adjacent, but not very relevant
+0.2 - 0.4: Is the same topic, but not relevant to the question
+0.4 - 0.6: Somewhat relevant; touches on aspects of the question but lacks clear connection or usefulness
+0.6 - 0.8: Mostly relevant; addresses key elements of the question but misses precision or completeness
+0.8 - 1: Partially or indirectly answers the question
+1: Directly answers the exact question

@@ -36,6 +36,8 @@ def semantic_search(query: str, index_name: str, k: int = 3) -> List[str]:
         select="*",
     ))
 
+    return results
+
 
     return [
 #         f"File: {r['file_name']}, Score: {r['@search.score']}, Content: {r["content"]}"

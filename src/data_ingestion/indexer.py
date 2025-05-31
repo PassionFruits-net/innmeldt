@@ -229,7 +229,11 @@ class AzureIndexer:
             ],
             algorithms=[HnswAlgorithmConfiguration(name="hnsw_algorithm_config")],
         )
+        fields = self._load_fields_config("src/data_ingestion/fields_config.json")
+
+        index = SearchIndex(name=index_name, fields=fields, vector_search=vector_search)
         client.create_index(index)
+
         print(f"[Index] Created new index: {index_name}")
 
     def _load_fields_config(self, config_path: str) -> List:
@@ -237,6 +241,8 @@ class AzureIndexer:
         with open(config_path, "r") as f:
             config_data = json.load(f)
 
+        fields = []
+        for field in config_data["fields"]:
             field_type = getattr(
                 SearchFieldDataType,
                 field["type"].replace("Collection(", "").replace(")", ""),
@@ -275,6 +281,8 @@ class AzureIndexer:
                     filterable=field.get("filterable", False),
                     facetable=True,
                 )
+            fields.append(field_instance)
+        return fields
 
     def get_queue_status(self):
         """Get information about queued documents."""

@@ -87,7 +87,7 @@ def main():
 
         st.markdown(f"## Answer:\n{answer['content']}")
             
-        if os.getenv("DEBUGGING"):
+        if os.getenv("DEBUGGING") == "True":
             context_formatted = [f"{i}. {line}" for i, line in enumerate(answer["context"], 1)]
             st.markdown("## Context:\n" + "\n".join(context_formatted))
 
