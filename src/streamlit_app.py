@@ -104,7 +104,7 @@ def main():
                 st.session_state["context"] = answer["context"]
 
                 if os.getenv("DEBUGGING") == "True":
-                    context_formatted = [f"{i}. {line}" for i, line in enumerate(answer["context"], 1)]
+                    context_formatted = [f"{i}. '{line}'" for i, line in enumerate(answer["context"], 1)]
                     st.markdown("## Context:\n" + "\n".join(context_formatted))
 
     # SPACER COLUMN - Creates visual separation

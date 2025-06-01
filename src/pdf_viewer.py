@@ -15,10 +15,8 @@ def load_pdf(pdf_path):
 
 def find_title_position(doc, title):
     for page_num, page in enumerate(doc):
-        print(title)
         instances = page.search_for(title)
         if instances:
-            print(f"{title} FOUND")
             return page_num, instances
 
     return 0, None
@@ -46,8 +44,6 @@ def highlight_paragraph_words(doc, title_page, title_rect, paragraph):
 
     for i, word in enumerate(words):
         word = word.strip()
-        if i > 0:
-            word = f" {word}"
 
         for page_num in range(last_page, min(last_page + 2, len(doc))):
             page = doc[page_num]
