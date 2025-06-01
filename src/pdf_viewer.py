@@ -41,8 +41,13 @@ def highlight_paragraph_words(doc, title_page, title_rect, paragraph):
 
     words = paragraph.split()
 
-    for word in words:
-        for page_num in range(title_page, len(doc)):
+    for i, word in enumerate(words):
+        if i > 0 or i < len(words) - 1:
+            word = f" {word} "
+
+        p = sorted(list(highlighted_rects.keys()))[-1] if len(highlighted_rects) else title_page
+
+        for page_num in range(p, p+2):
             page = doc[page_num]
             rects = page.search_for(word)
             rects.sort(key=lambda x: x.y0)
