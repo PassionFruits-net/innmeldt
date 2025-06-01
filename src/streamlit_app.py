@@ -27,7 +27,6 @@ def retrieve_model(thread_id: str, index_name: str, content: str):
     }
 
 
-
 def chat(query):
     response = requests.get(
         "http://localhost:8000/run",

@@ -2,7 +2,7 @@ from langgraph.graph import StateGraph, MessagesState, START, END
 from langchain.prompts import PromptTemplate
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
-from typing import List, TypedDict
+from typing import List, TypedDict, Annotated
 from pydantic import BaseModel, Field
 import asyncio
 from .retriever import semantic_search
@@ -12,6 +12,9 @@ from .api_client import openai_llm
 answer_template = PromptTemplate.from_file("src/prompts/rag_answer_prompt.txt")
 optimize_prompt = PromptTemplate.from_file("src/prompts/optimize_prompt.txt")
 rerank_prompt = PromptTemplate.from_file("src/prompts/rerank_prompt.txt")
+
+DEFAULT_RETRIEVAL = 15
+DEFAULT_RERANK = 5
 
 
 class BotState(MessagesState):
@@ -26,13 +29,6 @@ class ConfigScema(TypedDict):
     rerank_n : int
 
 
-class RankChunk(BaseModel):
-    score:      float = Field(..., description="Give a final score from 0-1 describing how relevant the chunk is to the user query.")
-
-
-rerank_llm: RankChunk = openai_llm.with_structured_output(RankChunk)
-
-
 def optimize_prompt_node(state: BotState):
     """Refine or optimize the user prompt before retrieval."""
     messages = state["messages"]
@@ -44,7 +40,7 @@ def optimize_prompt_node(state: BotState):
 def retrieval_node(state: BotState, config: RunnableConfig):
     """Perform semantic retrieval based on the optimized prompt."""
     # TODO: implement hybrid search
-    retrieval_n = config["configurable"].get("retrieval_n", 15)
+    retrieval_n = config["configurable"].get("retrieval_n", DEFAULT_RETRIEVAL)
     index_name = config["configurable"]["index_name"]
 
     last_message = state["optimized"].content
@@ -55,28 +51,35 @@ def retrieval_node(state: BotState, config: RunnableConfig):
 
 
 def reranking_node(state: BotState, config: RunnableConfig):
-    rerank_n = config["configurable"].get("rerank_n", 5)
+    """Reranking retrieved chunks with llm, only keeping the most important chunks."""
+    retrieval_n = config["configurable"].get("retrieval_n", DEFAULT_RETRIEVAL)
+    rerank_n = config["configurable"].get("rerank_n", DEFAULT_RERANK)
+
     query = state["optimized"]
     context_chunks = state["retrieved"]
-    return {"context": [c["content"] for c in context_chunks[:5]]}
 
-    async def score_all_chunks():
-        async def score_chunk(chunk, title, i):
-            prompt = rerank_prompt.format(title=title, chunk=chunk, query=query)
-            print("Running: %d" % i)
-            result = await rerank_llm.ainvoke(prompt)
-            print("Complete: %d" % i)
-            return {"chunk": chunk, "score": result.score}
 
-        tasks = [score_chunk(chunk["content"], chunk["title"], i) for i, chunk in enumerate(context_chunks)]
-        return await asyncio.gather(*tasks)
+    class RankParagraphs(BaseModel):
+        scores: Annotated[
+            List[float], 
+            Field(
+                min_length=retrieval_n, 
+                max_length=retrieval_n,
+                description="The relevance score of each corresponding chunk from 0-1"
+            )
+        ]    
+    rerank_llm = openai_llm.with_structured_output(RankParagraphs)
 
-    scored_chunks = asyncio.run(score_all_chunks())
+    chunks = [f"{i}. {c["content"]}\n" for i, c in enumerate(context_chunks, 1)]
+    prompt = rerank_prompt.format(chunks=chunks, query=query)
+    scores = rerank_llm.invoke(prompt).scores
 
-    top_chunks = sorted(scored_chunks, key=lambda x: x["score"], reverse=True)[:rerank_n]
+    # giving each chunk index that is used to get score, reverse makes it descending
+    context_chunks = [(i, chunk) for i, chunk in enumerate(context_chunks)]
+    context_chunks.sort(key=lambda x: scores[x[0]], reverse=True)
 
-    print("Rerank complete")
-    return {"context": [item["chunk"] for item in top_chunks]}
+    # reversing makes most relevant chunk nearest output, better for llm
+    return {"context": [chunk[1]["content"] for chunk in context_chunks[:rerank_n][::-1]]}
 
 
 def structuring_node(state: BotState):

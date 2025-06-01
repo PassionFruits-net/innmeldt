@@ -1,15 +1,16 @@
-Given the user query: "{query}"
-Assess the following chunk:
-# {title}
-"{chunk}"
+You're tasked with evaluating the relevance of each chunk to the given user query. Assign a relevance score between 0 and 1 for each chunk based on how well it answers or addresses the query.
 
-Assign a relevance score from 0 to 1.
-
-##  Scores:
+## Scoring Guidelines:
 0: No relevance at all
-0 - 0.2: Adjacent, but not very relevant
-0.2 - 0.4: Is the same topic, but not relevant to the question
-0.4 - 0.6: Somewhat relevant; touches on aspects of the question but lacks clear connection or usefulness
-0.6 - 0.8: Mostly relevant; addresses key elements of the question but misses precision or completeness
-0.8 - 1: Partially or indirectly answers the question
+0-0.2: Adjacent topic, but not relevant
+0.2-0.4: Same topic, but not relevant to the query
+0.4-0.6: Somewhat relevant; related but not clearly useful
+0.6-0.8: Mostly relevant; covers key points, but lacks precision or completeness
+0.8-1: Indirectly or partially answers the question
 1: Directly answers the exact question
+
+## User Query:
+{query}
+
+## Chunks:
+{chunks}
