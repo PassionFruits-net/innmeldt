@@ -41,13 +41,14 @@ def highlight_paragraph_words(doc, title_page, title_rect, paragraph):
 
     words = paragraph.split()
 
+    last_page = title_page
+
+
     for i, word in enumerate(words):
         if i > 0 or i < len(words) - 1:
             word = f" {word} "
 
-        p = sorted(list(highlighted_rects.keys()))[-1] if len(highlighted_rects) else title_page
-
-        for page_num in range(p, p+2):
+        for page_num in range(last_page, min(last_page + 2, len(doc))):
             page = doc[page_num]
             rects = page.search_for(word)
             rects.sort(key=lambda x: x.y0)
@@ -80,6 +81,7 @@ def highlight_paragraph_words(doc, title_page, title_rect, paragraph):
                 if page_num not in highlights_by_page:
                     highlights_by_page[page_num] = []
                 if page_num not in highlighted_rects:
+                    last_page = max(last_page, page_num)
                     highlighted_rects[page_num] = []
 
                 highlights_by_page[page_num].append(first_rect)
