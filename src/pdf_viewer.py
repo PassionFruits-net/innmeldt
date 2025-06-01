@@ -45,8 +45,9 @@ def highlight_paragraph_words(doc, title_page, title_rect, paragraph):
 
 
     for i, word in enumerate(words):
-        if i > 0 or i < len(words) - 1:
-            word = f" {word} "
+        word = word.strip()
+        if i > 0:
+            word = f" {word}"
 
         for page_num in range(last_page, min(last_page + 2, len(doc))):
             page = doc[page_num]
