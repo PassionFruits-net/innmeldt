@@ -4,7 +4,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
 from typing import List, TypedDict, Annotated
 from pydantic import BaseModel, Field
-import asyncio
+from pydantic import ValidationError
 from .retriever import semantic_search
 from .api_client import openai_llm
 
@@ -58,7 +58,6 @@ def reranking_node(state: BotState, config: RunnableConfig):
     query = state["optimized"]
     context_chunks = state["retrieved"]
 
-
     class RankParagraphs(BaseModel):
         scores: Annotated[
             List[float], 
@@ -68,18 +67,28 @@ def reranking_node(state: BotState, config: RunnableConfig):
                 description="The relevance score of each corresponding chunk from 0-1"
             )
         ]    
+
     rerank_llm = openai_llm.with_structured_output(RankParagraphs)
 
-    chunks = [f"{i}. {c["content"]}\n" for i, c in enumerate(context_chunks, 1)]
+    chunks = [f"{i}. {c['content']}\n" for i, c in enumerate(context_chunks, 1)]
     prompt = rerank_prompt.format(chunks=chunks, query=query)
-    scores = rerank_llm.invoke(prompt).scores
 
-    # giving each chunk index that is used to get score, reverse makes it descending
-    context_chunks = [(i, chunk) for i, chunk in enumerate(context_chunks)]
-    context_chunks.sort(key=lambda x: scores[x[0]], reverse=True)
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            scores = rerank_llm.invoke(prompt).scores
+            break
+        except ValidationError as e:
+            if attempt == max_retries - 1:
+                # After max retries, fallback to returning first rerank_n chunks directly
+                return {"context": [chunk["content"] for chunk in context_chunks[:rerank_n]]}
 
-    # reversing makes most relevant chunk nearest output, better for llm
-    return {"context": [chunk[1]["content"] for chunk in context_chunks[:rerank_n][::-1]]}
+    # Pair each chunk with its index, sort by score descending
+    indexed_chunks = [(i, chunk) for i, chunk in enumerate(context_chunks)]
+    indexed_chunks.sort(key=lambda x: scores[x[0]], reverse=True)
+
+    # Return the top rerank_n chunks reversed for LLM consumption
+    return {"context": [chunk[1]["content"] for chunk in indexed_chunks[:rerank_n][::-1]]}
 
 
 def structuring_node(state: BotState):

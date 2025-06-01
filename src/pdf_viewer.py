@@ -145,7 +145,7 @@ def display_pdf_with_highlights(pdf_path, context_list):
 
     sorted_pages = sorted(all_highlights.keys())
 
-    st.write(f"Showing {len(sorted_pages)} pages with highlights")
+    st.write(f"Viser {len(sorted_pages)} markerte sider")
 
     html_content = """
     <div style="height: 600px; overflow-y: auto; border: 2px solid #ddd;
@@ -165,7 +165,7 @@ def display_pdf_with_highlights(pdf_path, context_list):
 
             html_content += f"""
             <div style="margin-bottom: 25px;">
-                <h4 style="color: #333; margin-bottom: 5px;">Page {page_num + 1}</h4>
+                <h4 style="color: #333; margin-bottom: 5px;">Side {page_num + 1}</h4>
                 <img src="data:image/png;base64,{img_base64}"
                      style="width: 100%; max-width: 500px; height: auto;
                             border: 1px solid #ccc; border-radius: 5px;

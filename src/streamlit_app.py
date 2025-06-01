@@ -78,7 +78,7 @@ def main():
 
     # LEFT COLUMN - Chat Interface
     with col1:
-        st.header("Chatbot")
+        st.header("Pængsjon-boten")
         
         # Add some padding/styling to the chat interface
         with st.container():
@@ -90,14 +90,14 @@ def main():
             </style>
             """, unsafe_allow_html=True)
             
-            query = st.text_input("Ask a question")
-            if st.button("Ask") and query:
+            query = st.text_input("Still et spørsmål")
+            if st.button("Spør") and query:
                 start = time.time()
                 answer = retrieve_model("thread", st.session_state["index_name"], query)
                 elapsed = time.time() - start
 
-                st.markdown(f"## Answer:\n{answer['content']}")
-                st.markdown(f"Response time: {elapsed: .2f}s")
+                st.markdown(f"## Svar:\n{answer['content']}")
+                st.markdown(f"Responstid: {elapsed: .2f}s")
 
                 # Update context for PDF viewer
                 st.session_state["context"] = answer["context"]
@@ -105,6 +105,8 @@ def main():
                 if os.getenv("DEBUGGING") == "True":
                     context_formatted = [f"{i}. '{line}'" for i, line in enumerate(answer["context"], 1)]
                     st.markdown("## Context:\n" + "\n".join(context_formatted))
+            else:
+                st.markdown(f"## Svar:\nStill meg et spørsmål så skal jeg svare deg så godt jeg kan!")
 
     # SPACER COLUMN - Creates visual separation
     with spacer:
@@ -112,15 +114,14 @@ def main():
 
     # RIGHT COLUMN - PDF Viewer (Larger)
     with col2:
-        st.header("Relevant paragraphs")
+        st.header("Relevante paragrafer")
         
         # Only show PDF viewer if we have context
         if st.session_state["context"]:
             pdf_path = "tjenesteloven.pdf"
-            pdf_data = [("Kort om loven\nTjenestepensjonsloven"), ("§ 1-2. Definisjoner\nI loven betyr:")]
             render_pdf_viewer(pdf_path, st.session_state["context"])
         else:
-            st.info("Ask a question to see relevant document sections with highlights.")
+            st.info("Still et spørsmål for å se oversikten over relevante paragrafer.")
 
 
 if __name__ == "__main__":
