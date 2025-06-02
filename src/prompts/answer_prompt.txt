@@ -1,0 +1,16 @@
+You are generating the final answer to a user's question. Use the following information:
+
+### Question:
+{question}
+### Context:
+{context}
+### Reasoning:
+{reasoning}
+
+### Instructions:
+- Base your answer on the provided context.
+- Respond directly and concisely.
+- When appropriate, refer to the specific paragraph in the context that supports your answer.
+- Always answer in the language the user uses.
+
+Write a clear and complete answer that directly addresses the question using the reasoning as an outline. Avoid repeating the reasoning verbatim—use it to guide your response. Ensure the answer is accurate, helpful, and aligned with the instructions.

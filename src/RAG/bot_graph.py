@@ -9,9 +9,10 @@ from .retriever import semantic_search
 from .api_client import openai_llm
 
 
-answer_template = PromptTemplate.from_file("src/prompts/rag_answer_prompt.txt")
+answer_template = PromptTemplate.from_file("src/prompts/answer_prompt.txt")
 optimize_prompt = PromptTemplate.from_file("src/prompts/optimize_prompt.txt")
 rerank_prompt = PromptTemplate.from_file("src/prompts/rerank_prompt.txt")
+reasoning_prompt = PromptTemplate.from_file("src/prompts/reasoning_prompt.txt")
 
 DEFAULT_RETRIEVAL = 15
 DEFAULT_RERANK = 5
@@ -21,12 +22,18 @@ class BotState(MessagesState):
     optimized: str
     retrieved: List[str]
     context: List[str]
+    reasoning: str
 
 
 class ConfigScema(TypedDict):
     index_name: str
     retrieval_n: int
     rerank_n : int
+
+
+class ReasoningStep(BaseModel):
+    reasoning: str = Field(..., description="Think through if the context answers the question and what the relevant chunks are.")
+    relevant_chunks: List[int] = Field(..., description="The index of each relevant chunk.")
 
 
 def optimize_prompt_node(state: BotState):
@@ -58,7 +65,7 @@ def reranking_node(state: BotState, config: RunnableConfig):
     query = state["optimized"]
     context_chunks = state["retrieved"]
 
-    class RankParagraphs(BaseModel):
+    class RankChunks(BaseModel):
         scores: Annotated[
             List[float], 
             Field(
@@ -68,9 +75,9 @@ def reranking_node(state: BotState, config: RunnableConfig):
             )
         ]    
 
-    rerank_llm = openai_llm.with_structured_output(RankParagraphs)
+    rerank_llm = openai_llm.with_structured_output(RankChunks)
 
-    chunks = [f"{i}. {c['content']}\n" for i, c in enumerate(context_chunks, 1)]
+    chunks = "\n".join([f"{i}. {c['content']}" for i, c in enumerate(context_chunks, 1)])
     prompt = rerank_prompt.format(chunks=chunks, query=query)
 
     max_retries = 5
@@ -88,22 +95,43 @@ def reranking_node(state: BotState, config: RunnableConfig):
     indexed_chunks.sort(key=lambda x: scores[x[0]], reverse=True)
 
     # Return the top rerank_n chunks reversed for LLM consumption
+    print("Reranking complete")
     return {"context": [chunk[1]["content"] for chunk in indexed_chunks[:rerank_n][::-1]]}
 
 
 def structuring_node(state: BotState):
-    pass
-
-
-def generate_with_rag_node(state: BotState):
-    """Generate a response using retrieved and context (RAG)."""
     messages = state["messages"]
-    combined_context = "\n".join(state["context"])
+    question = messages[-1]
 
-    last_message = [answer_template.format(context=combined_context, content=messages[-1].content)]
+    context = state["context"]
+    chunks = "\n".join([f"{i}. {chunk}" for i, chunk in enumerate(context, 1)])
+    prompt = [reasoning_prompt.format(chunks=chunks, question=question)]
+
+    structuring_llm = openai_llm.with_structured_output(ReasoningStep)
+    response = structuring_llm.invoke(messages[:-1] + prompt)
+
+    new_context = [context[i-1] for i in response.relevant_chunks]
+
+    print("Structuring complete")
+    return {"reasoning": response.reasoning, "context": new_context}
+
+
+def generate_response_node(state: BotState):
+    """Generate a response using reasoning step."""
+    messages = state["messages"]
+    thoughts = state["reasoning"]
+    optimized = state["optimized"]
+    context = state["context"]
+
+    chunks = "\n".join([f"{i}. {chunk}" for i, chunk in enumerate(context, 1)])
+
+    last_message = [answer_template.format(context=chunks, question=optimized, reasoning=thoughts)]
     response = openai_llm.invoke(messages[:-1] + last_message)
 
-    return {"messages": response}
+    messages[-1].content = response.content
+
+    print("Answer complete")
+    return {"messages": messages[-1]}
 
 
 graph_builder = StateGraph(BotState, ConfigScema)
@@ -112,12 +140,13 @@ graph_builder.add_node("optimize_prompt", optimize_prompt_node)
 graph_builder.add_node("retrieval", retrieval_node)
 graph_builder.add_node("reranking", reranking_node)
 graph_builder.add_node("structuring", structuring_node)
-graph_builder.add_node("generate_with_rag", generate_with_rag_node)
+graph_builder.add_node("generate_response", generate_response_node)
 
 graph_builder.set_entry_point("optimize_prompt")
 graph_builder.add_edge("optimize_prompt", "retrieval")
 graph_builder.add_edge("retrieval", "reranking")
-graph_builder.add_edge("reranking", "generate_with_rag")
-graph_builder.add_edge("generate_with_rag", END)
+graph_builder.add_edge("reranking", "structuring")
+graph_builder.add_edge("structuring", "generate_response")
+graph_builder.add_edge("generate_response", END)
 
 graph = graph_builder.compile(checkpointer=MemorySaver())

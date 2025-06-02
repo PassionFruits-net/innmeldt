@@ -167,7 +167,7 @@ def display_pdf_with_highlights(pdf_path, context_list):
             <div style="margin-bottom: 25px;">
                 <h4 style="color: #333; margin-bottom: 5px;">Side {page_num + 1}</h4>
                 <img src="data:image/png;base64,{img_base64}"
-                     style="width: 100%; max-width: 500px; height: auto;
+                     style="width: 100%; max-width: 800px; height: auto;
                             border: 1px solid #ccc; border-radius: 5px;
                             box-shadow: 0 2px 4px rgba(0,0,0,0.1);" />
             </div>

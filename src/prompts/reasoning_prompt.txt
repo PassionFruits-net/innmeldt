@@ -1,0 +1,12 @@
+You are given a user question and a numbered list of context chunks. Your task is to determine whether the context provided answers the question, and if so, which chunks are relevant.
+## Instructions:
+Carefully read the question: {question}
+### Review the numbered context chunks:
+{chunks}
+
+### Then, in your reasoning:
+Think through whether the context, taken as a whole, provides an answer to the question.
+Identify which specific chunks are relevant to answering the question.
+Explain your thought process clearly, noting what information in the relevant chunks supports the answer and why other chunks are not relevant.
+
+Finally, list the indexes of the relevant chunks.
