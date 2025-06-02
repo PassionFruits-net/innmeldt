@@ -149,4 +149,4 @@ graph_builder.add_edge("reranking", "structuring")
 graph_builder.add_edge("structuring", "generate_response")
 graph_builder.add_edge("generate_response", END)
 
-graph = graph_builder.compile(checkpointer=MemorySaver())
+graph = graph_builder.compile()
